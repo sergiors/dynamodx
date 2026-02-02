@@ -122,8 +122,8 @@ class Set(Expr):
     If you want to avoid overwriting an existing attribute, you can use `SET`
     with the `if_not_exists` function.
 
-    The `if_not_exists` function is specific
-    to the SET action and can only be used in an update expression.
+    The `if_not_exists` function is specific to the SET action and can only
+    be used in an update expression.
     """
 
     def __init__(

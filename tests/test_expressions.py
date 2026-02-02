@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from dynamodx.conditions import (
+from dynamodx.expressions import (
     Add,
     Delete,
     Remove,
