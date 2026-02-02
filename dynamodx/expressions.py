@@ -34,7 +34,7 @@ class Expr(ABC):
     def expr(self) -> str: ...
 
 
-class FuncExpr(Expr):
+class FuncExpr(Expr, ABC):
     def __init__(
         self,
         func: str,
@@ -49,7 +49,7 @@ class FuncExpr(Expr):
         func = self.func
         name = self.name_placeholder
         value = self.value_placeholder
-        return f'{name} = {func}({name}, {value})'
+        return f'{func}({name}, {value})'
 
 
 class IfNotExistsExpr(FuncExpr):
@@ -85,19 +85,19 @@ class IfNotExistsExpr(FuncExpr):
             f'{self.value_placeholder}_r': self.r_value,
         }
 
-    def __add__(self, other: int) -> 'IfNotExistsExpr':
+    def __add__(self, right_op: int) -> 'IfNotExistsExpr':
         return IfNotExistsExpr(
             path=self.path,
             value=self.value,
-            r_value=other,
+            r_value=right_op,
             operand='+',
         )
 
-    def __sub__(self, other: int) -> 'IfNotExistsExpr':
+    def __sub__(self, right_op: int) -> 'IfNotExistsExpr':
         return IfNotExistsExpr(
             path=self.path,
             value=self.value,
-            r_value=other,
+            r_value=right_op,
             operand='-',
         )
 
@@ -133,23 +133,26 @@ class Set(Expr):
         **kwargs,
     ):
         (k, v), *_ = kwargs.items()
-        if isinstance(v, FuncExpr):
-            self.func = v
-            self.path = k
-            self.value = v.value
-        else:
-            self.func = None
-            self.path = k
-            self.value = v
-            self.operand = operand
+
+        # if isinstance(v, FuncExpr):
+        #     self.func = v
+        #     self.path = k
+        #     self.value = v.value
+        # else:
+        #     self.func = None
+
+        self.path = k
+        self.value = v
+        self.operand = operand
 
     def expr(self) -> str:
-        if self.func:
-            return self.func.expr()
-
-        operand = self.operand
         name = self.name_placeholder
         value = self.value_placeholder
+        operand = self.operand
+
+        if isinstance(self.value, FuncExpr):
+            expr = self.value.expr()
+            return f'{name} = {expr}'
 
         if operand in ('+', '-'):
             # Incrementing and decrementing numeric attributes
@@ -159,9 +162,18 @@ class Set(Expr):
 
         return f'{name} = {value}'
 
+    def expr_attr_names(self) -> dict:
+        attrs = super().expr_attr_names()
+
+        if isinstance(self.value, FuncExpr):
+            return attrs | self.value.expr_attr_names()
+
+        return attrs
+
     def expr_attr_values(self) -> dict:
-        if self.func:
-            return self.func.expr_attr_values()
+        if isinstance(self.value, FuncExpr):
+            return self.value.expr_attr_values()
+
         return super().expr_attr_values()
 
 

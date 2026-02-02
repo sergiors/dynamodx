@@ -101,3 +101,19 @@ def test_update_expr_sum():
             ':v_score_r': 1,
         },
     }
+
+    assert UpdateExpr(
+        Set(overall_score=if_not_exists(score=0) + 1),
+    ) == {
+        'update_expr': (
+            'SET #n_overall_score = if_not_exists(#n_score, :v_score) + :v_score_r'
+        ),
+        'expr_attr_names': {
+            '#n_overall_score': 'overall_score',
+            '#n_score': 'score',
+        },
+        'expr_attr_values': {
+            ':v_score': 0,
+            ':v_score_r': 1,
+        },
+    }
