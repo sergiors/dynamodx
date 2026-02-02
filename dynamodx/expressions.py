@@ -134,13 +134,6 @@ class Set(Expr):
     ):
         (k, v), *_ = kwargs.items()
 
-        # if isinstance(v, FuncExpr):
-        #     self.func = v
-        #     self.path = k
-        #     self.value = v.value
-        # else:
-        #     self.func = None
-
         self.path = k
         self.value = v
         self.operand = operand
