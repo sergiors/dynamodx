@@ -2,3 +2,4 @@
 .python-version
 .coverage
 __pycache__
+.dynamodblocal
