@@ -250,7 +250,7 @@ class TransactWriter:
         try:
             self._client.transact_write_items(TransactItems=transact_items)
         except self._client.exceptions.TransactionCanceledException as err:
-            error_msg = jmespath.search('response.Error.Message || `Unknown`', err)
+            error_msg = jmespath.search('Error.Message || `Unknown`', err.response)
             cancellations = err.response.get('CancellationReasons', [])
             reasons = []
 
