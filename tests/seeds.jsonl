@@ -1,3 +1,4 @@
 {"pk": "f966f7e5-a9d3-4d0f-8219-dfc12602bffd", "sk": "0", "name": "Bilbo Baggins"}
 {"pk": "f966f7e5-a9d3-4d0f-8219-dfc12602bffd", "sk": "EMAIL#bilbo@baggins.com"}
 {"pk": "EMAIL", "sk": "bilbo@baggins.com", "user_id": "f966f7e5-a9d3-4d0f-8219-dfc12602bffd"}
+{"pk": "USERNAME", "sk": "bilbo.baggins", "user_id": "f966f7e5-a9d3-4d0f-8219-dfc12602bffd"}

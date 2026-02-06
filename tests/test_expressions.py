@@ -13,10 +13,10 @@ from dynamodx.expressions import (
 
 def test_update_expr_exclude_none():
     expr = UpdateExpr(
-        Set(name='Juscelino Kubitschek'),
-        Set(email='kubitschek@gov.br'),
+        Set(name='Bilbo Baggins'),
+        Set(email='bilbo@baggins.com'),
         Set(phone=None),
-        Add(emails={'kubitschek@gov.br'}),
+        Add(emails={'bilbo@baggins.com'}),
     )
     assert expr == {
         'update_expr': (
@@ -28,16 +28,16 @@ def test_update_expr_exclude_none():
             '#n_emails': 'emails',
         },
         'expr_attr_values': {
-            ':v_name': 'Juscelino Kubitschek',
-            ':v_email': 'kubitschek@gov.br',
-            ':v_emails': {'kubitschek@gov.br'},
+            ':v_name': 'Bilbo Baggins',
+            ':v_email': 'bilbo@baggins.com',
+            ':v_emails': {'bilbo@baggins.com'},
         },
     }
 
 
 def test_update_expr_funcs():
     expr = UpdateExpr(
-        Set(name='Juscelino Kubitschek'),
+        Set(name='Bilbo Baggins'),
         Set(score=10, operand='+'),
         Set(points=if_not_exists(points=0)),
         Set(tags=list_append(tags=['python', 'aws'])),
@@ -45,7 +45,7 @@ def test_update_expr_funcs():
         Set(phone=None),
         Remove('quantity'),
         Remove('brand.name'),
-        Delete(emails={'kubitschek@gov.br'}),
+        Delete(emails={'bilbo@baggins.com'}),
     )
     assert expr == {
         'update_expr': (
@@ -67,11 +67,11 @@ def test_update_expr_funcs():
             '#n_emails': 'emails',
         },
         'expr_attr_values': {
-            ':v_name': 'Juscelino Kubitschek',
+            ':v_name': 'Bilbo Baggins',
             ':v_score': Decimal('5'),
             ':v_points': 0,
             ':v_tags': ['python', 'aws'],
-            ':v_emails': {'kubitschek@gov.br'},
+            ':v_emails': {'bilbo@baggins.com'},
         },
     }
 

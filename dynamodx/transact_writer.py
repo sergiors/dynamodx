@@ -63,11 +63,13 @@ class TransactWriter:
         *,
         flush_amount: int = 50,
         client: DynamoDBClient,
+        fail_fast: bool = True,
     ) -> None:
         self._table_name = table_name
         self._items_buffer: list[TransactOperation] = []
         self._flush_amount = flush_amount
         self._client = client
+        self._fail_fast = fail_fast
 
     def __enter__(self) -> Self:
         return self
@@ -266,24 +268,27 @@ class TransactWriter:
                     old_item=deserialize(reason.get('Item', {})),
                 )
 
-                if item.exc_cls:
-                    _raise_for_reason(item.exc_cls, error_msg, cancellation_reason)
+                if self._fail_fast:
+                    exc_cls = item.exc_cls or TransactionOperationFailed
+                    raise _exc_for_reason(
+                        exc_cls, error_msg, cancellation_reason
+                    ) from err
 
                 reasons.append(cancellation_reason)
 
-            raise TransactionCanceledException(error_msg, reasons=reasons)
+            raise TransactionCanceledException(error_msg, reasons=reasons) from err
         else:
             return True
 
 
-def _raise_for_reason(
+def _exc_for_reason(
     exc_cls: Type[Exception],
     msg: str,
     reason: TransactionCanceledReason,
-):
+) -> Exception:
     if issubclass(exc_cls, TransactionOperationFailed):
-        raise exc_cls(msg, reason=reason)
+        return exc_cls(msg, reason=reason)
 
     exc = exc_cls(msg)
     setattr(exc, '__reason__', reason)
-    raise exc
+    return exc
