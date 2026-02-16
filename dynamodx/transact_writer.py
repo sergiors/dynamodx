@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Literal, Self, Type, TypedDict
+from typing import TYPE_CHECKING, Any, Self, Type, TypedDict
 
 import jmespath
 
@@ -6,10 +6,12 @@ from .types import deserialize, serialize
 
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
+    from mypy_boto3_dynamodb.literals import ReturnValuesOnConditionCheckFailureType
     from mypy_boto3_dynamodb.type_defs import TransactWriteItemTypeDef
 else:
-    DynamoDBClient = object
+    DynamoDBClient = Any
     TransactWriteItemTypeDef = Any
+    ReturnValuesOnConditionCheckFailureType = Any
 
 
 class TransactionCanceledReason(TypedDict):
@@ -88,7 +90,7 @@ class TransactWriter:
         table_name: str | None = None,
         expr_attr_names: dict | None = None,
         expr_attr_values: dict | None = None,
-        return_on_cond_fail: Literal['ALL_OLD', 'NONE'] = 'NONE',
+        return_on_cond_fail: ReturnValuesOnConditionCheckFailureType | None = None,
         exc_cls: Type[Exception] | None = None,
     ) -> None:
         attrs: dict = {}
@@ -124,7 +126,7 @@ class TransactWriter:
         expr_attr_names: dict | None = None,
         expr_attr_values: dict | None = None,
         cond_expr: str | None = None,
-        return_on_cond_fail: Literal['ALL_OLD', 'NONE'] = 'NONE',
+        return_on_cond_fail: ReturnValuesOnConditionCheckFailureType | None = None,
         exc_cls: Type[Exception] | None = None,
     ) -> None:
         attrs: dict = {}
@@ -162,7 +164,7 @@ class TransactWriter:
         cond_expr: str | None = None,
         expr_attr_names: dict | None = None,
         expr_attr_values: dict | None = None,
-        return_on_cond_fail: Literal['ALL_OLD', 'NONE'] = 'NONE',
+        return_on_cond_fail: ReturnValuesOnConditionCheckFailureType | None = None,
         exc_cls: Type[Exception] | None = None,
     ) -> None:
         attrs: dict = {}
@@ -201,7 +203,7 @@ class TransactWriter:
         table_name: str | None = None,
         expr_attr_names: dict | None = None,
         expr_attr_values: dict | None = None,
-        return_on_cond_fail: Literal['ALL_OLD', 'NONE'] = 'NONE',
+        return_on_cond_fail: ReturnValuesOnConditionCheckFailureType | None = None,
         exc_cls: Type[Exception] | None = None,
     ) -> None:
         attrs: dict = {}
@@ -252,7 +254,7 @@ class TransactWriter:
         try:
             self._client.transact_write_items(TransactItems=transact_items)
         except self._client.exceptions.TransactionCanceledException as err:
-            error_msg = jmespath.search('Error.Message || `Unknown`', err.response)
+            error_msg = jmespath.search("Error.Message || 'Unknown'", err.response)
             cancellations = err.response.get('CancellationReasons', [])
             reasons = []
 

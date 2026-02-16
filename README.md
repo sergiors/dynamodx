@@ -3,11 +3,10 @@
 A developer-friendly library for DynamoDB, simplifying single-table design without ORM lock-in.
 
 ```python
-import boto3
-
 from dynamodx.transact_writer import TransactWriter, TransactionOperationFailed
 
-class EmailConflictError(TransactionOperationFailed): pass
+class EmailConflictError(TransactionOperationFailed):
+    pass
 
 try:
     with TransactWriter(table_name=..., client=...) as transact:

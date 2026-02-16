@@ -8,14 +8,18 @@ from dynamodx.transact_writer import (
 
 
 def test_transact_write_items(
+    dynamodb_settings,
     dynamodb_seeds,
     dynamodb_client,
 ):
+    table_name = dynamodb_settings['TableName']
+    dynamodb_seeds('transact_writer.jsonl')
+
     class EmailConflictError(TransactionOperationFailed):
         pass
 
     with pytest.raises(EmailConflictError) as err:
-        with TransactWriter('pytest', client=dynamodb_client) as transact:
+        with TransactWriter(table_name, client=dynamodb_client) as transact:
             transact.put(
                 item={
                     'pk': 'ff05221a-1c30-486c-8750-d9f27d152e62',
@@ -50,6 +54,8 @@ def test_when_fail_fast_disabled(
     dynamodb_seeds,
     dynamodb_client,
 ):
+    dynamodb_seeds('transact_writer.jsonl')
+
     class EmailConflictError(TransactionOperationFailed):
         pass
 

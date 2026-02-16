@@ -53,9 +53,11 @@ def _serialize_to_basic_types(data: Any) -> str | dict | set | list:
             return data
 
 
-def serialize(data: Mapping[str, Any]) -> dict:
+def serialize(data: Mapping[str, Any], exclude_none: bool = False) -> dict:
     return {
-        k: serializer.serialize(_serialize_to_basic_types(v)) for k, v in data.items()
+        k: serializer.serialize(_serialize_to_basic_types(v))
+        for k, v in data.items()
+        if not exclude_none or v is not None
     }
 
 
