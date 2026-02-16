@@ -1,4 +1,4 @@
-from dynamodx.keys import PartitionKey, PrimaryKey, SortKey
+from dynamodx.keys import PartitionKey, PrimaryKey, PrimaryKeySet, SortKey
 
 
 def test_primary_key():
@@ -31,4 +31,10 @@ def test_primary_key_set():
         + SortKey(sk='TRANSACTION#STATS', rename_key='stats')
     )
 
-    print(pk)
+    assert pk == PrimaryKeySet(
+        pairs=(
+            PrimaryKey(id='123', sk=SortKey(sk='ITEMS')),
+            PrimaryKey(id='123', sk=SortKey(sk='USER')),
+            PrimaryKey(id='123', sk=SortKey(sk='TRANSACTION#STATS')),
+        )
+    )

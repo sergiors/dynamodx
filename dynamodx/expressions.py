@@ -211,9 +211,9 @@ class Delete(Expr):
 
 
 class UpdateExpr(dict):
-    def __init__(self, *args) -> None:
+    def __init__(self, *args, exclude_none: bool = False) -> None:
         super().__init__()
-        exprs = [x for x in args if x.value is not None]
+        exprs = [x for x in args if not exclude_none or x.value is not None]
         self.update(self.__asdict(exprs))
 
     def __asdict(self, exprs: list[Expr] = []) -> dict:

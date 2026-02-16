@@ -17,6 +17,7 @@ def test_update_expr_exclude_none():
         Set(email='bilbo@baggins.com'),
         Set(phone=None),
         Add(emails={'bilbo@baggins.com'}),
+        exclude_none=True,
     )
     assert expr == {
         'update_expr': (
@@ -46,13 +47,15 @@ def test_update_expr_funcs():
         Remove('quantity'),
         Remove('brand.name'),
         Delete(emails={'bilbo@baggins.com'}),
+        exclude_none=False,
     )
     assert expr == {
         'update_expr': (
             'SET #n_name = :v_name, '
             '#n_score = #n_score + :v_score, '
             '#n_points = if_not_exists(#n_points, :v_points), '
-            '#n_tags = list_append(#n_tags, :v_tags) '
+            '#n_tags = list_append(#n_tags, :v_tags), '
+            '#n_phone = :v_phone '
             'ADD #n_score :v_score '
             'REMOVE #n_quantity, #n_brand_name '
             'DELETE #n_emails :v_emails'
@@ -62,6 +65,7 @@ def test_update_expr_funcs():
             '#n_score': 'score',
             '#n_points': 'points',
             '#n_tags': 'tags',
+            '#n_phone': 'phone',
             '#n_quantity': 'quantity',
             '#n_brand_name': 'brand.name',
             '#n_emails': 'emails',
@@ -71,6 +75,7 @@ def test_update_expr_funcs():
             ':v_score': Decimal('5'),
             ':v_points': 0,
             ':v_tags': ['python', 'aws'],
+            ':v_phone': None,
             ':v_emails': {'bilbo@baggins.com'},
         },
     }
@@ -81,6 +86,7 @@ def test_update_expr_sum():
         Set(points=if_not_exists(points=1)),
         Set(attempts=if_not_exists(attempts=0) + 1),
         Set(score=if_not_exists(score=100) - 1),
+        exclude_none=True,
     )
     assert expr == {
         'update_expr': (
