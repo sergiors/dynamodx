@@ -23,14 +23,14 @@ def test_transact_write_items(
         with TransactWriter(table_name, client=dynamodb_client) as transact:
             transact.put(
                 item={
-                    'id': 'ff05221a-1c30-486c-8750-d9f27d152e62',
+                    'id': 'USER#ff05221a-1c30-486c-8750-d9f27d152e62',
                     'sk': '0',
                     'name': 'Bilbo Baggins',
                 },
             )
             transact.put(
                 item={
-                    'id': 'ff05221a-1c30-486c-8750-d9f27d152e62',
+                    'id': 'USER#ff05221a-1c30-486c-8750-d9f27d152e62',
                     'sk': 'EMAIL#bilbo@baggins.com',
                 },
             )

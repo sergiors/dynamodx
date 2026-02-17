@@ -13,7 +13,7 @@ def test_transact_get(
     transact = TransactGet(table_name, client=dynamodb_client)
 
     user = transact.get_items(
-        PartitionKey(id='4df0f9ac-a235-41a2-9746-7a84409a809b')
+        PartitionKey(id='USER#4df0f9ac-a235-41a2-9746-7a84409a809b')
         + SortKey(sk='0')
         + SortKey(
             sk='RATE_LIMIT_EXCEEDED',
@@ -25,11 +25,16 @@ def test_transact_get(
             sk='TEMPORARY_PASSWORD',
             rename_key='temporary_password',
         )
+        + SortKey(
+            sk='EMAIL#aragorn@gondor.com',
+            rename_key='mx_record_exists',
+            path_spec='mx_record.exists',
+        )
     )
-
     assert user == {
         'sk': '0',
         'name': 'Aragorn II Elessar',
-        'id': '4df0f9ac-a235-41a2-9746-7a84409a809b',
+        'id': 'USER#4df0f9ac-a235-41a2-9746-7a84409a809b',
         'exceeded': {'sk': 'RATE_LIMIT_EXCEEDED'},
+        'mx_record_exists': True,
     }

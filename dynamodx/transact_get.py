@@ -32,9 +32,7 @@ class TransactGet:
         ]
 
         output = self._client.transact_get_items(TransactItems=transact_items)
-        items = [
-            deserialize(res.get('Item', {})) for res in output.get('Responses', [])
-        ]
+        items = [deserialize(r.get('Item', {})) for r in output.get('Responses', [])]
 
         if flatten_top and items:
             head, tail = items[0], items[1:]
