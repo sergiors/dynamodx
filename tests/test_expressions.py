@@ -1,22 +1,22 @@
 from decimal import Decimal
 
 from dynamodx.expressions import (
-    Add,
-    Delete,
-    Remove,
-    Set,
-    UpdateExpr,
+    AddExpr,
+    DeleteExpr,
+    RemoveExpr,
+    SetExpr,
+    UpdateExpression,
     if_not_exists,
     list_append,
 )
 
 
 def test_update_expr_exclude_none():
-    expr = UpdateExpr(
-        Set(name='Bilbo Baggins'),
-        Set(email='bilbo@baggins.com'),
-        Set(phone=None),
-        Add(emails={'bilbo@baggins.com'}),
+    expr = UpdateExpression(
+        SetExpr(name='Bilbo Baggins'),
+        SetExpr(email='bilbo@baggins.com'),
+        SetExpr(phone=None),
+        AddExpr(emails={'bilbo@baggins.com'}),
         exclude_none=True,
     )
     assert expr == {
@@ -37,16 +37,16 @@ def test_update_expr_exclude_none():
 
 
 def test_update_expr_funcs():
-    expr = UpdateExpr(
-        Set(name='Bilbo Baggins'),
-        Set(score=10, operand='+'),
-        Set(points=if_not_exists(points=0)),
-        Set(tags=list_append(tags=['python', 'aws'])),
-        Add(score=Decimal(5)),
-        Set(phone=None),
-        Remove('quantity'),
-        Remove('brand.name'),
-        Delete(emails={'bilbo@baggins.com'}),
+    expr = UpdateExpression(
+        SetExpr(name='Bilbo Baggins'),
+        SetExpr(score=10, operand='+'),
+        SetExpr(points=if_not_exists(points=0)),
+        SetExpr(tags=list_append(tags=['python', 'aws'])),
+        AddExpr(score=Decimal(5)),
+        SetExpr(phone=None),
+        RemoveExpr('quantity'),
+        RemoveExpr('brand.name'),
+        DeleteExpr(emails={'bilbo@baggins.com'}),
         exclude_none=False,
     )
     assert expr == {
@@ -82,10 +82,10 @@ def test_update_expr_funcs():
 
 
 def test_update_expr_sum():
-    expr = UpdateExpr(
-        Set(points=if_not_exists(points=1)),
-        Set(attempts=if_not_exists(attempts=0) + 1),
-        Set(score=if_not_exists(score=100) - 1),
+    expr = UpdateExpression(
+        SetExpr(points=if_not_exists(points=1)),
+        SetExpr(attempts=if_not_exists(attempts=0) + 1),
+        SetExpr(score=if_not_exists(score=100) - 1),
         exclude_none=True,
     )
     assert expr == {
@@ -108,8 +108,8 @@ def test_update_expr_sum():
         },
     }
 
-    assert UpdateExpr(
-        Set(overall_score=if_not_exists(score=0) + 1),
+    assert UpdateExpression(
+        SetExpr(overall_score=if_not_exists(score=0) + 1),
     ) == {
         'update_expr': (
             'SET #n_overall_score = if_not_exists(#n_score, :v_score) + :v_score_r'

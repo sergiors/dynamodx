@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Generator
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, Generator, TypedDict
 
 import boto3
 import jsonlines
@@ -12,17 +13,29 @@ else:
     DynamoDBClient = object
 
 
+DynamoDBSettings = TypedDict(
+    'DynamoDBSettings',
+    {
+        'TableName': str,
+        'PartitionKey': str,
+        'SortKey': str,
+    },
+)
+
+
 @pytest.fixture
 def dynamodb_settings() -> dict:
     return {
         'TableName': 'pytest',
-        'PartitionKey': 'pk',
+        'PartitionKey': 'id',
         'SortKey': 'sk',
     }
 
 
 @pytest.fixture
-def dynamodb_client(dynamodb_settings) -> Generator[DynamoDBClient, None, None]:
+def dynamodb_client(
+    dynamodb_settings: DynamoDBSettings,
+) -> Generator[DynamoDBClient, None, None]:
     table_name = dynamodb_settings['TableName']
     pk = dynamodb_settings['PartitionKey']
     sk = dynamodb_settings['SortKey']
@@ -50,10 +63,15 @@ def dynamodb_client(dynamodb_settings) -> Generator[DynamoDBClient, None, None]:
 
 
 @pytest.fixture()
-def dynamodb_seeds(dynamodb_client):
-    def seeds(seedfile: str):
-        with jsonlines.open(f'tests/seeds/{seedfile}') as lines:
-            for line in lines:
-                dynamodb_client.put_item(TableName='pytest', Item=serialize(line))
+def dynamodb_seeds(dynamodb_client: DynamoDBClient) -> 'Seeds':
+    return Seeds(dynamodb_client)
 
-    return seeds
+
+class Seeds:
+    def __init__(self, client: DynamoDBClient):
+        self._client = client
+
+    def __call__(self, seedfile: str) -> None:
+        with jsonlines.open(Path('tests/seeds') / seedfile) as lines:
+            for line in lines:
+                self._client.put_item(TableName='pytest', Item=serialize(line))

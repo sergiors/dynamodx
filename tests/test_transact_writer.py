@@ -5,12 +5,13 @@ from dynamodx.transact_writer import (
     TransactionOperationFailed,
     TransactWriter,
 )
+from tests.conftest import DynamoDBClient, DynamoDBSettings, Seeds
 
 
 def test_transact_write_items(
-    dynamodb_settings,
-    dynamodb_seeds,
-    dynamodb_client,
+    dynamodb_settings: DynamoDBSettings,
+    dynamodb_seeds: Seeds,
+    dynamodb_client: DynamoDBClient,
 ):
     table_name = dynamodb_settings['TableName']
     dynamodb_seeds('transact_writer.jsonl')
@@ -22,20 +23,20 @@ def test_transact_write_items(
         with TransactWriter(table_name, client=dynamodb_client) as transact:
             transact.put(
                 item={
-                    'pk': 'ff05221a-1c30-486c-8750-d9f27d152e62',
+                    'id': 'ff05221a-1c30-486c-8750-d9f27d152e62',
                     'sk': '0',
                     'name': 'Bilbo Baggins',
                 },
             )
             transact.put(
                 item={
-                    'pk': 'ff05221a-1c30-486c-8750-d9f27d152e62',
+                    'id': 'ff05221a-1c30-486c-8750-d9f27d152e62',
                     'sk': 'EMAIL#bilbo@baggins.com',
                 },
             )
             transact.put(
                 item={
-                    'pk': 'EMAIL',
+                    'id': 'EMAIL',
                     'sk': 'bilbo@baggins.com',
                 },
                 cond_expr='attribute_not_exists(sk)',
@@ -51,8 +52,8 @@ def test_transact_write_items(
 
 
 def test_when_fail_fast_disabled(
-    dynamodb_seeds,
-    dynamodb_client,
+    dynamodb_seeds: Seeds,
+    dynamodb_client: DynamoDBClient,
 ):
     dynamodb_seeds('transact_writer.jsonl')
 
@@ -68,7 +69,7 @@ def test_when_fail_fast_disabled(
         ) as transact:
             transact.put(
                 item={
-                    'pk': 'EMAIL',
+                    'id': 'EMAIL',
                     'sk': 'bilbo@baggins.com',
                 },
                 cond_expr='attribute_not_exists(sk)',
@@ -76,7 +77,7 @@ def test_when_fail_fast_disabled(
             )
             transact.put(
                 item={
-                    'pk': 'USERNAME',
+                    'id': 'USERNAME',
                     'sk': 'bilbo.baggins',
                 },
                 cond_expr='attribute_not_exists(sk)',

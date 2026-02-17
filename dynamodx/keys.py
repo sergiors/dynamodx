@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Self, overload
+from typing import Any, Self
 
 
 class Key(ABC, dict):
@@ -26,43 +26,24 @@ class SortKey(str):
         If provided, renames the sort key in the output.
     """
 
-    @overload
-    def __new__(
-        cls,
-        sk: str,
-        *,
-        path_spec: str | None = ...,
-        rename_key: str | None = ...,
-        projection_expr: str | None = ...,
-    ) -> Self: ...
-
-    @overload
-    def __new__(
-        cls,
-        *,
-        path_spec: str | None = ...,
-        rename_key: str | None = ...,
-        projection_expr: str | None = ...,
-        **kwargs: str,
-    ) -> Self: ...
-
     def __new__(
         cls,
         *args,
         path_spec: str | None = None,
         rename_key: str | None = None,
         projection_expr: str | None = None,
+        expr_attr_names: dict | None = None,
         **kwargs,
     ) -> Self:
         if len(args):
-            sk, sk_value = None, args[0]
+            name_sk, value_sk = None, args[0]
         elif kwargs:
-            (sk, sk_value), *_ = kwargs.items()
+            (name_sk, value_sk), *_ = kwargs.items()
         else:
             raise TypeError('SortKey() requires a value')
 
-        obj = super().__new__(cls, sk_value)
-        obj.sk = sk
+        obj = super().__new__(cls, value_sk)
+        obj.sk = name_sk
         return obj
 
     def __init__(
@@ -71,6 +52,7 @@ class SortKey(str):
         path_spec: str | None = None,
         rename_key: str | None = None,
         projection_expr: str | None = None,
+        expr_attr_names: dict | None = None,
         **kwargs,
     ) -> None:
         # __init__ is used to store the parameters for later reference.
@@ -78,12 +60,7 @@ class SortKey(str):
         self.path_spec = path_spec
         self.rename_key = rename_key
         self.projection_expr = projection_expr
-
-    def __repr__(self) -> str:
-        sk_value = str.__repr__(self)
-        if self.sk:
-            return f'SortKey({self.sk}={sk_value})'
-        return f'SortKey({sk_value})'
+        self.expr_attr_names = expr_attr_names
 
 
 class PartitionKey(Key):
@@ -95,24 +72,20 @@ class PartitionKey(Key):
         table_name: str | None = None,
         **kwargs,
     ) -> None:
-        (pk, pk_value), *_ = kwargs.items()
-        super().__init__(**{pk: pk_value})
+        (name_pk, value_pk), *_ = kwargs.items()
+        super().__init__(**{name_pk: value_pk})
 
-        self.pk = pk
+        self.name_pk = name_pk
         self.table_name = table_name
 
-    def __repr__(self) -> str:
-        (pk, pk_value), *_ = self.items()
-        return f'PartitionKey({pk}={pk_value!r})'
-
     def expr_attr_names(self) -> dict:
-        return {'#pk': self.pk}
+        return {'#pk': self.name_pk}
 
     def expr_attr_values(self) -> dict:
-        return {':pk': self[self.pk]}
+        return {':pk': self[self.name_pk]}
 
     def __add__(self, other: SortKey) -> 'PrimaryKey':
-        pk = self.pk
+        pk = self.name_pk
         sk = other.sk
         kwargs = {
             pk: self[pk],
@@ -143,27 +116,27 @@ class PrimaryKey(Key):
             The sort key.
         table_name : str, optional
         """
-        (pk, pk_value), (sk, sk_value), *_ = kwargs.items()
-        super().__init__(**{pk: pk_value, sk: sk_value})
+        (name_pk, value_pk), (name_sk, value_sk), *_ = kwargs.items()
+        super().__init__(**{name_pk: value_pk, name_sk: value_sk})
 
-        self.pk = pk
-        self.sk = sk
+        self.name_pk = name_pk
+        self.name_sk = name_sk
         self.table_name = table_name
 
-    def __repr__(self) -> str:
-        (pk, pk_value), (sk, sk_value), *_ = self.items()
-        return f'PrimaryKey({pk}={pk_value!r}, {sk}={sk_value!r})'
+    @property
+    def sk(self):
+        return self[self.name_sk]
 
     def expr_attr_names(self) -> dict:
         return {
-            '#pk': self.pk,
-            '#sk': self.sk,
+            '#pk': self.name_pk,
+            '#sk': self.name_sk,
         }
 
     def expr_attr_values(self) -> dict:
-        sk = self[self.sk]
+        sk = self[self.name_sk]
         return {
-            ':pk': self[self.pk],
+            ':pk': self[self.name_pk],
             ':sk': str(sk) if isinstance(sk, SortKey) else sk,
         }
 
@@ -172,7 +145,7 @@ class PrimaryKey(Key):
             return PrimaryKeySet((self, other))
 
         if isinstance(other, SortKey):
-            pk, sk = self.pk, other.sk
+            pk, sk = self.name_pk, other.sk
             kwargs = {pk: self[pk], sk: other}
             return PrimaryKeySet((self, PrimaryKey(**kwargs)))
 
@@ -197,7 +170,7 @@ class PrimaryKeySet:
             return PrimaryKeySet(pairs=self.pairs + (other,))
 
         last_pair = self.pairs[-1]
-        pk, sk = last_pair.pk, last_pair.sk
+        pk, sk = last_pair.name_pk, last_pair.name_sk
         kwargs = {
             pk: last_pair[pk],
             sk: other,

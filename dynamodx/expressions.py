@@ -112,7 +112,7 @@ def if_not_exists(**kwargs):
     return IfNotExistsExpr(k, v)
 
 
-class Set(Expr):
+class SetExpr(Expr):
     """
     Use the `SET` action in an update expression to add one or more attributes
     to an item.
@@ -170,7 +170,7 @@ class Set(Expr):
         return super().expr_attr_values()
 
 
-class Add(Expr):
+class AddExpr(Expr):
     def __init__(self, **kwargs) -> None:
         (k, v), *_ = kwargs.items()
 
@@ -184,7 +184,7 @@ class Add(Expr):
         return f'{self.name_placeholder} {self.value_placeholder}'
 
 
-class Remove(Expr):
+class RemoveExpr(Expr):
     def __init__(self, path: str) -> None:
         self.path = path
         self.value = _Unset()
@@ -196,7 +196,7 @@ class Remove(Expr):
         return {}
 
 
-class Delete(Expr):
+class DeleteExpr(Expr):
     def __init__(self, **kwargs) -> None:
         (k, v), *_ = kwargs.items()
 
@@ -210,13 +210,14 @@ class Delete(Expr):
         return f'{self.name_placeholder} {self.value_placeholder}'
 
 
-class UpdateExpr(dict):
+class UpdateExpression(dict):
     def __init__(self, *args, exclude_none: bool = False) -> None:
         super().__init__()
         exprs = [x for x in args if not exclude_none or x.value is not None]
         self.update(self.__asdict(exprs))
 
-    def __asdict(self, exprs: list[Expr] = []) -> dict:
+    def __asdict(self, exprs: list[Expr] | None = None) -> dict:
+        exprs = exprs or []
         expr_attr_names = reduce(
             lambda acc, attr: {**acc, **attr.expr_attr_names()}, exprs, {}
         )
@@ -224,10 +225,10 @@ class UpdateExpr(dict):
             lambda acc, attr: {**acc, **attr.expr_attr_values()}, exprs, {}
         )
 
-        sets = list(filter(lambda attr: isinstance(attr, Set), exprs))
-        adds = list(filter(lambda attr: isinstance(attr, Add), exprs))
-        removes = list(filter(lambda attr: isinstance(attr, Remove), exprs))
-        deletes = list(filter(lambda attr: isinstance(attr, Delete), exprs))
+        sets = list(filter(lambda attr: isinstance(attr, SetExpr), exprs))
+        adds = list(filter(lambda attr: isinstance(attr, AddExpr), exprs))
+        removes = list(filter(lambda attr: isinstance(attr, RemoveExpr), exprs))
+        deletes = list(filter(lambda attr: isinstance(attr, DeleteExpr), exprs))
 
         expr_parts = []
         if sets:
