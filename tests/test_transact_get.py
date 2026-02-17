@@ -17,16 +17,19 @@ def test_transact_get(
         + SortKey(sk='0')
         + SortKey(
             sk='RATE_LIMIT_EXCEEDED',
-            rename_key='rate_limit_exceeded',
+            rename_key='exceeded',
             projection_expr='#sk',
             expr_attr_names={'#sk': 'sk'},
         )
-        + SortKey(sk='TEMPORARY_PASSWORD', rename_key='temporary_password')
+        + SortKey(
+            sk='TEMPORARY_PASSWORD',
+            rename_key='temporary_password',
+        )
     )
 
     assert user == {
         'sk': '0',
         'name': 'Aragorn II Elessar',
         'id': '4df0f9ac-a235-41a2-9746-7a84409a809b',
-        'rate_limit_exceeded': {'sk': 'RATE_LIMIT_EXCEEDED'},
+        'exceeded': {'sk': 'RATE_LIMIT_EXCEEDED'},
     }

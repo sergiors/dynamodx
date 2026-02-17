@@ -9,12 +9,17 @@ def test_primary_key():
 
 
 def test_sort_key():
-    sk = SortKey('abc')
-    assert sk == 'abc'
+    sk = SortKey(
+        sk='abc',
+        projection_expr='#sk',
+        expr_attr_names={'#sk': 'sk'},
+        rename_key='alphabet',
+    )
 
-    sk_kw = SortKey(sk='abc', rename_key='alphabet')
-    assert sk_kw == 'abc'
-    assert sk_kw.rename_key == 'alphabet'
+    assert sk == 'abc'
+    assert sk.projection_expr == '#sk'
+    assert sk.expr_attr_names == {'#sk': 'sk'}
+    assert sk.rename_key == 'alphabet'
 
 
 def test_partition_key():

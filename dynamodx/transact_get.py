@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, Any
 
+import jmespath
+
 from dynamodx.keys import PrimaryKey, PrimaryKeySet
 from dynamodx.types import deserialize, serialize
 
@@ -41,7 +43,9 @@ class TransactGet:
 
         pairs = kset.pairs[1:] if flatten_top else kset.pairs
         nested = {
-            _get_sk(pk): item for pk, item in zip(pairs, tail, strict=True) if item
+            _output_key(pk): _project_item(pk, item)
+            for pk, item in zip(pairs, tail, strict=True)
+            if item
         }
         return {**head, **nested}
 
@@ -65,6 +69,16 @@ def _build_get(pk: PrimaryKey, table_name: str) -> TransactGetItemTypeDef:
     return {'Get': attrs}
 
 
-def _get_sk(pk: PrimaryKey) -> str:
+def _output_key(pk: PrimaryKey) -> str:
     sk = pk.sk
     return str(getattr(sk, 'rename_key', sk))
+
+
+def _project_item(pk: PrimaryKey, item: dict) -> dict:
+    sk = pk.sk
+    path_spec = getattr(sk, 'path_spec', None)
+
+    if path_spec is None:
+        return item
+
+    return jmespath.compile(path_spec).search(item)
