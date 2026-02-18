@@ -25,10 +25,33 @@ class TransactGet:
         self._table_name = table_name
         self._client = client
 
-    def get_items(self, kset: PrimaryKeySet, *, flatten_top: bool = True):
+    def get_items(
+        self,
+        keyset: PrimaryKeySet,
+        *,
+        flatten_top: bool = True,
+    ) -> dict[str, Any]:
+        """Get multiple items via a transaction based on the provided TransactKey.
+
+        Parameters
+        ----------
+        key : PrimaryKeySet
+
+        flatten_top : bool, optional
+            Determines whether the first nested item in the transaction result
+            should be flattened,
+            i.e., extracted to serve as the primary item at the top level of
+            the returned dict.
+            If True, the nested item is promoted to the top level.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict of items retrieved from the transaction.
+        """
         table_name = self._table_name
         transact_items: list[TransactGetItemTypeDef] = [
-            _build_get(pk, table_name) for pk in kset.pairs
+            _build_get(pk, table_name) for pk in keyset.pairs
         ]
 
         output = self._client.transact_get_items(TransactItems=transact_items)
@@ -39,12 +62,13 @@ class TransactGet:
         else:
             head, tail = {}, items
 
-        pairs = kset.pairs[1:] if flatten_top else kset.pairs
+        pairs = keyset.pairs[1:] if flatten_top else keyset.pairs
         nested = {
             _output_key(pk): _project_item(pk, item)
             for pk, item in zip(pairs, tail, strict=True)
             if item
         }
+
         return {**head, **nested}
 
 

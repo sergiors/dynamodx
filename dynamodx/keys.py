@@ -60,7 +60,6 @@ class SortKey(str):
             )
 
         ((name_sk, value_sk),) = kwargs.items()
-
         obj = super().__new__(cls, value_sk)
 
         obj.sk = name_sk
@@ -136,7 +135,10 @@ class PrimaryKey(Key):
                 f'({len(kwargs)} given)'
             )
 
-        (name_pk, value_pk), (name_sk, value_sk) = kwargs.items()
+        (
+            (name_pk, value_pk),
+            (name_sk, value_sk),
+        ) = kwargs.items()
         super().__init__(**{name_pk: value_pk, name_sk: value_sk})
 
         self.name_pk = name_pk
@@ -154,10 +156,9 @@ class PrimaryKey(Key):
         }
 
     def expr_attr_values(self) -> dict[str, Any]:
-        sk = self[self.name_sk]
         return {
             ':pk': self[self.name_pk],
-            ':sk': str(sk) if isinstance(sk, SortKey) else sk,
+            ':sk': self[self.name_sk],
         }
 
     def __add__(self, other: Self | SortKey) -> 'PrimaryKeySet':
@@ -172,13 +173,13 @@ class PrimaryKey(Key):
             kwargs = {pk: self[pk], sk: other}
             return PrimaryKeySet((self, PrimaryKey(**kwargs)))
 
-        return NotImplemented
+        return NotImplementedError
 
     def __radd__(self, other: Any):
         if isinstance(other, PrimaryKeySet):
             return other + self
 
-        return NotImplemented
+        return NotImplementedError
 
 
 @dataclass(frozen=True)
@@ -187,7 +188,7 @@ class PrimaryKeySet:
 
     def __add__(self, other: PrimaryKey | SortKey) -> 'PrimaryKeySet':
         if not isinstance(other, (PrimaryKey, SortKey)):
-            return NotImplemented
+            return NotImplementedError
 
         if isinstance(other, PrimaryKey):
             return PrimaryKeySet(pairs=self.pairs + (other,))
@@ -196,12 +197,13 @@ class PrimaryKeySet:
             raise ValueError('Cannot add SortKey to empty PrimaryKeySet')
 
         last_pair = self.pairs[-1]
-        kwargs = {
-            last_pair.name_pk: last_pair[last_pair.name_pk],
-            last_pair.name_sk: other,
-            'table_name': last_pair.table_name,
-        }
-        next_pair = PrimaryKey(**kwargs)
+        next_pair = PrimaryKey(
+            **{
+                last_pair.name_pk: last_pair[last_pair.name_pk],
+                last_pair.name_sk: other,
+            },
+            table_name=last_pair.table_name,
+        )
 
         if next_pair in self.pairs:
             return self

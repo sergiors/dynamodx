@@ -1,4 +1,9 @@
-from typing import TYPE_CHECKING, Any, cast
+import json
+from base64 import urlsafe_b64decode, urlsafe_b64encode
+from typing import TYPE_CHECKING, Any, TypedDict
+from urllib.parse import quote, unquote
+
+from dynamodx.transact_get import TransactGet
 
 from .transact_writer import TransactWriter
 from .types import deserialize, serialize
@@ -11,21 +16,25 @@ if TYPE_CHECKING:
         SelectType,
     )
     from mypy_boto3_dynamodb.type_defs import (
+        AttributeValueTypeDef,
         DeleteItemOutputTypeDef,
-        GetItemOutputTypeDef,
         PutItemOutputTypeDef,
-        QueryOutputTypeDef,
         UpdateItemOutputTypeDef,
     )
 else:
     DynamoDBClient = Any
     ReturnValueType = Any
+    AttributeValueTypeDef = Any
     ReturnValuesOnConditionCheckFailureType = Any
     DeleteItemOutputTypeDef = Any
-    QueryOutputTypeDef = Any
-    GetItemOutputTypeDef = Any
     PutItemOutputTypeDef = Any
     UpdateItemOutputTypeDef = Any
+
+
+class QueryOutput(TypedDict):
+    items: list[dict[str, Any]]
+    count: int
+    last_key: str | None
 
 
 class Repository:
@@ -45,13 +54,13 @@ class Repository:
         select: SelectType | None = None,
         expr_attr_names: dict | None = None,
         expr_attr_values: dict | None = None,
+        exclusive_start_key: str | None = None,
         filter_expr: str | None = None,
         projection_expr: str | None = None,
         limit: int | None = None,
         scan_index_forward: bool = True,
-        exclusive_start_key: dict | None = None,
         table_name: str | None = None,
-    ) -> QueryOutputTypeDef:
+    ) -> QueryOutput:
         """You must provide the name of the partition key attribute
         and a single value for that attribute.
 
@@ -66,7 +75,7 @@ class Repository:
         Queries that do not return results consume the minimum number
         of read capacity units for that type of read operation.
 
-        - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/query.html
+        - https://docs.aws.amazon.com/boto3/latest/reference/services/dynamodb/client/query.html
         """
         attrs: dict = {
             'TableName': table_name or self._table_name,
@@ -87,7 +96,7 @@ class Repository:
             attrs['ExpressionAttributeValues'] = serialize(expr_attr_values)
 
         if exclusive_start_key:
-            attrs['ExclusiveStartKey'] = serialize(exclusive_start_key)
+            attrs['ExclusiveStartKey'] = _startkey_b64decode(exclusive_start_key)
 
         if filter_expr:
             attrs['FilterExpression'] = filter_expr
@@ -97,13 +106,11 @@ class Repository:
 
         output = self._client.query(**attrs)
 
-        return cast(
-            QueryOutputTypeDef,
-            output
-            | dict(
-                Items=[deserialize(item) for item in output.get('Items', [])],
-            ),
-        )
+        return {
+            'items': [deserialize(item) for item in output.get('Items', [])],
+            'count': output.get('Count', 0),
+            'last_key': _startkey_b64encode(output.get('LastEvaluatedKey', None)),
+        }
 
     def get_item(
         self,
@@ -112,14 +119,14 @@ class Repository:
         table_name: str | None = None,
         expr_attr_names: dict | None = None,
         projection_expr: str | None = None,
-    ) -> GetItemOutputTypeDef:
+    ) -> dict[str, Any]:
         """The GetItem operation returns a set of attributes for the item
         with the given primary key.
 
         If there is no matching item, GetItem does not return any data and
         there will be no Item element in the response.
 
-        - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/get_item.html
+        - https://docs.aws.amazon.com/boto3/latest/reference/services/dynamodb/client/get_item.html
         """
         attrs = {
             'TableName': table_name or self._table_name,
@@ -134,13 +141,7 @@ class Repository:
 
         output = self._client.get_item(**attrs)
 
-        return cast(
-            GetItemOutputTypeDef,
-            output
-            | {
-                'Item': deserialize(output.get('Item', {})),
-            },
-        )
+        return deserialize(output.get('Item', {}))
 
     def put_item(
         self,
@@ -253,6 +254,30 @@ class Repository:
             client=self._client,
             flush_amount=flush_amount,
         )
+
+    def transact_get(
+        self,
+        table_name: str | None = None,
+    ) -> TransactGet:
+        return TransactGet(
+            table_name=table_name or self._table_name,
+            client=self._client,
+        )
+
+
+def _startkey_b64encode(obj: dict[str, AttributeValueTypeDef] | None) -> str | None:
+    if not obj:
+        return None
+
+    s = json.dumps(obj)
+    b = urlsafe_b64encode(s.encode('utf-8')).decode('utf-8')
+    return quote(b)
+
+
+def _startkey_b64decode(s: str) -> dict[str, AttributeValueTypeDef]:
+    b = unquote(s).encode('utf-8')
+    s = urlsafe_b64decode(b).decode('utf-8')
+    return json.loads(s)
 
 
 DynamoDBRepository = Repository

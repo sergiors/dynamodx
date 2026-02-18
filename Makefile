@@ -11,7 +11,10 @@ check:
 	uvx twine check dist/*
 
 publish:
-	uv publish
+	uvx twine upload dist/*
+
+publish-test:
+	uvx twine upload --repository testpypi dist/*
 
 
 up:
