@@ -1,10 +1,11 @@
 import json
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Type, TypedDict
 from urllib.parse import quote, unquote
 
-from dynamodx.transact_get import TransactGet
+from dynamodx.keys import PrimaryKey
 
+from .transact_get import TransactGet, project_item
 from .transact_writer import TransactWriter
 from .types import deserialize, serialize
 
@@ -114,19 +115,43 @@ class Repository:
 
     def get_item(
         self,
-        key: dict,
+        key: dict[str, str] | PrimaryKey,
         *,
         table_name: str | None = None,
         expr_attr_names: dict | None = None,
         projection_expr: str | None = None,
+        raise_on_error: bool = True,
+        exc_cls: Type[Exception] = Exception,
+        default: Any = None,
     ) -> dict[str, Any]:
-        """The GetItem operation returns a set of attributes for the item
-        with the given primary key.
+        """Get an item with the given primary key.
 
-        If there is no matching item, GetItem does not return any data and
-        there will be no Item element in the response.
+        Parameters
+        ----------
+        key : dict[str, str] | PrimaryKey
+            Primary key of the item to be retrieved.
+        table_name : str | None, optional
+            Uses default table if not provided.
+        expr_attr_names : dict | None, optional
+            Expression attribute name mappings.
+        projection_expr : str | None, optional
+            Attributes to return. Returns full item if None.
+        raise_on_error : bool, optional
+            If True, raises ``exc_cls`` when item is not found.
+        exc_cls : Type[Exception], optional
+            Exception class to be used if the item is not found.
+        default : Any, optional
+            Default value returned if the item is not found.
 
-        - https://docs.aws.amazon.com/boto3/latest/reference/services/dynamodb/client/get_item.html
+        Returns
+        -------
+        dict[str, Any]
+            Data of the retrieved item or the default value if not found.
+
+        Raises
+        ------
+        Exception
+            If item is not found and ``raise_on_error`` is True.
         """
         attrs = {
             'TableName': table_name or self._table_name,
@@ -140,8 +165,15 @@ class Repository:
             attrs['ProjectionExpression'] = projection_expr
 
         output = self._client.get_item(**attrs)
+        item = deserialize(output.get('Item', {}))
 
-        return deserialize(output.get('Item', {}))
+        if raise_on_error and not item:
+            raise exc_cls(f'Item not found ({key!r})')
+
+        if isinstance(key, PrimaryKey):
+            return project_item(key, item)
+
+        return item or default
 
     def put_item(
         self,

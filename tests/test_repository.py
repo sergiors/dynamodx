@@ -58,13 +58,37 @@ def test_get_item(
             id='USER#f841e66c-f7b9-48be-9429-9e6da362aeba',
             sk=SortKey(
                 sk='0',
-                rename_key='user',
+                path_spec='name',
             ),
         ),
     )
 
-    assert output == {
-        'id': 'USER#f841e66c-f7b9-48be-9429-9e6da362aeba',
-        'sk': '0',
-        'name': 'Legolas Greenleaf',
-    }
+    assert output == 'Legolas Greenleaf'
+
+    nothing = dyn.get_item(
+        PrimaryKey(
+            id='USER#f841e66c-f7b9-48be-9429-9e6da362aeba',
+            sk=SortKey(
+                sk='0',
+                path_spec='email',
+            ),
+        ),
+    )
+
+    assert nothing is None
+
+
+def test_get_item_not_found_error(
+    dyn: DynamoDBRepository,
+):
+    class UserNotFounedError(Exception):
+        pass
+
+    with pytest.raises(UserNotFounedError):
+        dyn.get_item(
+            PrimaryKey(
+                id='USER#f841e66c-f7b9-48be-9429-9e6da362aeba',
+                sk='0',
+            ),
+            exc_cls=UserNotFounedError,
+        )

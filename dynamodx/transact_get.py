@@ -31,23 +31,31 @@ class TransactGet:
         *,
         flatten_top: bool = True,
     ) -> dict[str, Any]:
-        """Get multiple items via a transaction based on the provided TransactKey.
+        """Get multiple items via a transaction based on the provided PrimaryKeySet.
 
         Parameters
         ----------
-        key : PrimaryKeySet
+        keyset : PrimaryKeySet
+            Primary keys of the items to fetch in the transaction.
 
         flatten_top : bool, optional
             Determines whether the first nested item in the transaction result
             should be flattened,
+
             i.e., extracted to serve as the primary item at the top level of
             the returned dict.
+
             If True, the nested item is promoted to the top level.
 
         Returns
         -------
         dict[str, Any]
             A dict of items retrieved from the transaction.
+
+        Notes
+        -----
+        Missing items are ignored and are not included in the returned dict.
+        The order of items follows the order defined in ``keyset.pairs``.
         """
         table_name = self._table_name
         transact_items: list[TransactGetItemTypeDef] = [
@@ -64,7 +72,7 @@ class TransactGet:
 
         pairs = keyset.pairs[1:] if flatten_top else keyset.pairs
         nested = {
-            _output_key(pk): _project_item(pk, item)
+            _output_key(pk): project_item(pk, item)
             for pk, item in zip(pairs, tail, strict=True)
             if item
         }
@@ -96,9 +104,8 @@ def _output_key(pk: PrimaryKey) -> str:
     return str(getattr(sk, 'rename_key', sk))
 
 
-def _project_item(pk: PrimaryKey, item: dict) -> dict:
-    sk = pk.sk
-    path_spec = getattr(sk, 'path_spec', None)
+def project_item(pk: PrimaryKey, item: dict) -> dict:
+    path_spec = getattr(pk.sk, 'path_spec', None)
 
     if path_spec is None:
         return item

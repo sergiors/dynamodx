@@ -1,6 +1,6 @@
 [project]
 name = "dynamodx"
-version = "0.1.1"
+version = "0.1.2"
 description = "Developer-friendly library for DynamoDB with single-table design, without ORM lock-in."
 readme = "README.md"
 authors = [
