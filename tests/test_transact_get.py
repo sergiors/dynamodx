@@ -28,7 +28,7 @@ def test_transact_get(
         + SortKey(
             sk='EMAIL#aragorn@gondor.com',
             rename_key='mx_record_exists',
-            path_spec='mx_record.exists',
+            path_spec='mx_record_exists',
         )
     )
     assert user == {

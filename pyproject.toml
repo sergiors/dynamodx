@@ -6,11 +6,44 @@ readme = "README.md"
 authors = [
     { name = "Sérgio Rafael Siqueira", email = "osergiosiqueira@gmail.com" },
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+
+    "Typing :: Typed",
+
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = [
+    "aws",
+    "dynamodb",
+    "database",
+]
 dependencies = [
     "boto3>=1.42.39",
     "jmespath>=1.1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/sergiors/dynamodx"
+Repository = "https://github.com/sergiors/dynamodx"
+Issues = "https://github.com/sergiors/dynamodx/issues"
 
 [dependency-groups]
 dev = [

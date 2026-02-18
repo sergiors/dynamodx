@@ -33,3 +33,7 @@ except EmailConflictError as err:
     # Got existing `user_id`
     user_id = err.reason['old_image']['user_id']
 ```
+
+## License
+
+Dynamodx is open-source software licensed under the [MIT License](LICENSE).
