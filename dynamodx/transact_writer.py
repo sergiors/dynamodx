@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, Self, Type, TypedDict
 
 import jmespath
 
-from .types import deserialize, serialize
+from .types import deserialize, serialize, to_dict
 
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
@@ -10,8 +10,8 @@ if TYPE_CHECKING:
     from mypy_boto3_dynamodb.type_defs import TransactWriteItemTypeDef
 else:
     DynamoDBClient = Any
-    TransactWriteItemTypeDef = Any
     ReturnValuesOnConditionCheckFailureType = Any
+    TransactWriteItemTypeDef = Any
 
 
 class TransactionCanceledReason(TypedDict):
@@ -129,6 +129,8 @@ class TransactWriter:
         return_on_cond_fail: ReturnValuesOnConditionCheckFailureType | None = None,
         exc_cls: Type[Exception] | None = None,
     ) -> None:
+        is_dynamodb_mapped = getattr(item.__class__, '_is_dynamodb_mapped', False)
+        serialized = serialize(to_dict(item) if is_dynamodb_mapped else item)  # type: ignore
         attrs: dict = {}
 
         if cond_expr:
@@ -148,7 +150,7 @@ class TransactWriter:
                 {
                     'Put': dict(
                         TableName=table_name or self._table_name,
-                        Item=serialize(item),
+                        Item=serialized,
                         **attrs,
                     )
                 },

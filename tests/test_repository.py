@@ -1,13 +1,21 @@
+from dataclasses import dataclass
+
 import pytest
 
 from dynamodx.keys import PrimaryKey, SortKey
-from dynamodx.repository import DynamoDBRepository
-from tests.conftest import DynamoDBClient, Seeds
+from dynamodx.repository import DynamoDBRepository, dynamodb_mapping
+from tests.conftest import DynamoDBClient, DynamoDBSettings, Seeds
 
 
 @pytest.fixture
-def dyn(dynamodb_client: DynamoDBClient):
-    return DynamoDBRepository('pytest', client=dynamodb_client)
+def dyn(
+    dynamodb_client: DynamoDBClient,
+    dynamodb_settings: DynamoDBSettings,
+):
+    return DynamoDBRepository(
+        dynamodb_settings['TableName'],
+        client=dynamodb_client,
+    )
 
 
 def test_get_items(
@@ -92,3 +100,26 @@ def test_get_item_not_found_error(
             ),
             exc_cls=UserNotFounedError,
         )
+
+
+def test_put_item_from_dataclass(
+    dynamodb_settings: DynamoDBSettings,
+    dyn: DynamoDBRepository,
+):
+    @dynamodb_mapping(
+        dynamodb_settings['TableName'],
+        partition_key='id',
+        sort_key='sk',
+    )
+    @dataclass
+    class User:
+        id: str
+        sk: str
+        name: str
+
+    user = User(id='233', sk='1233', name='Elrond Peredhel')
+
+    assert dyn.put_item(user)
+
+    r = dyn.get_item(PrimaryKey(id=user.id, sk=user.sk))
+    assert r['name'] == 'Elrond Peredhel'

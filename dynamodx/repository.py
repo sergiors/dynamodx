@@ -1,13 +1,13 @@
 import json
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from typing import TYPE_CHECKING, Any, Type, TypedDict
+from typing import TYPE_CHECKING, Any, Type, TypedDict, TypeVar
 from urllib.parse import quote, unquote
 
 from dynamodx.keys import PrimaryKey
 
 from .transact_get import TransactGet, project_item
 from .transact_writer import TransactWriter
-from .types import deserialize, serialize
+from .types import deserialize, serialize, to_dict
 
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb.client import DynamoDBClient
@@ -24,9 +24,10 @@ if TYPE_CHECKING:
     )
 else:
     DynamoDBClient = Any
-    ReturnValueType = Any
-    AttributeValueTypeDef = Any
     ReturnValuesOnConditionCheckFailureType = Any
+    ReturnValueType = Any
+    SelectType = Any
+    AttributeValueTypeDef = Any
     DeleteItemOutputTypeDef = Any
     PutItemOutputTypeDef = Any
     UpdateItemOutputTypeDef = Any
@@ -186,9 +187,11 @@ class Repository:
         return_values: ReturnValueType | None = None,
         return_on_cond_fail: ReturnValuesOnConditionCheckFailureType | None = None,
     ) -> PutItemOutputTypeDef:
+        is_dynamodb_mapped = getattr(item.__class__, '_is_dynamodb_mapped', False)
+        serialized = serialize(to_dict(item) if is_dynamodb_mapped else item)  # type: ignore
         attrs = {
             'TableName': table_name or self._table_name,
-            'Item': serialize(item),
+            'Item': serialized,
         }
 
         if cond_expr:
@@ -313,3 +316,22 @@ def _startkey_b64decode(s: str) -> dict[str, AttributeValueTypeDef]:
 
 
 DynamoDBRepository = Repository
+
+T = TypeVar('T')
+
+
+def dynamodb_mapping(
+    table: str,
+    partition_key: str,
+    sort_key: str | None = None,
+) -> Any:
+    def decorator(cls: type[T]) -> type[T]:
+        cls._dynamodb_table = table  # type: ignore
+        cls._dynamodb_partition_key = partition_key  # type: ignore
+        cls._dynampdb_sort_key = sort_key  # type: ignore
+        cls._dynampdb_sort_key = sort_key  # type: ignore
+        cls._is_dynamodb_mapped = True  # type: ignore
+
+        return cls
+
+    return decorator

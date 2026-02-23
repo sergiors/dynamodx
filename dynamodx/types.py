@@ -63,3 +63,17 @@ def serialize(data: Mapping[str, Any], exclude_none: bool = False) -> dict:
 
 def deserialize(data: Mapping[str, Any]) -> dict:
     return {k: deserializer.deserialize(v) for k, v in data.items()}
+
+
+def to_dict(data: Any | None) -> dict[str, Any] | None:
+    # Convert from Pydantic v2 model
+    if callable(getattr(data, 'model_dump', None)):
+        return data.model_dump()  # type: ignore
+
+    # Convert from dataclasses
+    if hasattr(data, '__dataclass_fields__'):
+        import dataclasses
+
+        return dataclasses.asdict(data)  # type: ignore
+
+    return data
