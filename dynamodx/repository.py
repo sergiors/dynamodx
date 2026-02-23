@@ -329,7 +329,6 @@ def dynamodb_mapping(
         cls._dynamodb_table = table  # type: ignore
         cls._dynamodb_partition_key = partition_key  # type: ignore
         cls._dynampdb_sort_key = sort_key  # type: ignore
-        cls._dynampdb_sort_key = sort_key  # type: ignore
         cls._is_dynamodb_mapped = True  # type: ignore
 
         return cls
