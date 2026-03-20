@@ -1,14 +1,14 @@
 from dynamodx.keys import PartitionKey, PrimaryKey, PrimaryKeySet, SortKey
 
 
-def test_primary_key():
+def test_primary_key_expr_attr_names_and_values():
     pk = PrimaryKey(id='123', sk='abc')
     assert pk.expr_attr_names() == {'#pk': 'id', '#sk': 'sk'}
     assert pk.expr_attr_values() == {':pk': '123', ':sk': 'abc'}
     assert pk == {'id': '123', 'sk': 'abc'}
 
 
-def test_sort_key():
+def test_sort_key_with_projection_and_rename():
     sk = SortKey(
         sk='abc',
         projection_expr='#sk',
@@ -22,14 +22,14 @@ def test_sort_key():
     assert sk.rename_key == 'alphabet'
 
 
-def test_partition_key():
+def test_partition_key_expr_attr_names_and_values():
     pk = PartitionKey(pk='123')
     assert pk.expr_attr_names() == {'#pk': 'pk'}
     assert pk.expr_attr_values() == {':pk': '123'}
     assert pk == {'pk': '123'}
 
 
-def test_primary_key_set():
+def test_primary_key_set_combines_multiple_sort_keys():
     kset = (
         PartitionKey(id='123')
         + SortKey(sk='ITEMS', rename_key='items')

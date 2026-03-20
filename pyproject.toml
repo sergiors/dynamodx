@@ -38,6 +38,7 @@ keywords = [
 dependencies = [
     "boto3>=1.42.39",
     "jmespath>=1.1.0",
+    "pydantic>=2.12.5",
 ]
 
 [project.urls]
@@ -49,13 +50,14 @@ Issues = "https://github.com/sergiors/dynamodx/issues"
 dev = [
     "boto3-stubs[essential]>=1.42.39",
     "jsonlines>=4.0.0",
+    "pydantic>=2.12.5",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "ruff>=0.14.14",
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=dynamodx --cov-report html"
+addopts = "--cov --cov-report=term-missing --cov-report=html -v"
 
 [tool.ruff]
 target-version = "py311"

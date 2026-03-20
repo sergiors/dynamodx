@@ -6,11 +6,11 @@ from dynamodx.keys import PrimaryKey, PrimaryKeySet
 from dynamodx.types import deserialize, serialize
 
 if TYPE_CHECKING:
-    from mypy_boto3_dynamodb.client import DynamoDBClient
+    from mypy_boto3_dynamodb.client import DynamoDBClient as Boto3DynamoDBClient
     from mypy_boto3_dynamodb.type_defs import GetTypeDef, TransactGetItemTypeDef
 
 else:
-    DynamoDBClient = Any
+    Boto3DynamoDBClient = Any
     GetTypeDef = Any
     TransactGetItemTypeDef = Any
 
@@ -20,7 +20,7 @@ class TransactGet:
         self,
         table_name: str,
         *,
-        client: DynamoDBClient,
+        client: Boto3DynamoDBClient,
     ) -> None:
         self._table_name = table_name
         self._client = client

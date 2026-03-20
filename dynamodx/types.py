@@ -66,14 +66,20 @@ def deserialize(data: Mapping[str, Any]) -> dict:
 
 
 def to_dict(data: Any | None) -> dict[str, Any] | None:
+    if data is None:
+        return None
+    
     # Convert from Pydantic v2 model
-    if callable(getattr(data, 'model_dump', None)):
+    if hasattr(data, 'model_dump') and callable(data.model_dump):
         return data.model_dump()  # type: ignore
-
+    
     # Convert from dataclasses
     if hasattr(data, '__dataclass_fields__'):
         import dataclasses
-
         return dataclasses.asdict(data)  # type: ignore
-
+    
+    # Convert from dict-like objects
+    if isinstance(data, dict):
+        return data
+    
     return data

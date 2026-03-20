@@ -1,18 +1,19 @@
+import pytest
+
 from dynamodx.keys import PartitionKey, SortKey
 from dynamodx.transact_get import TransactGet
-from tests.conftest import DynamoDBClient, DynamoDBSettings, Seeds
 
 
-def test_transact_get(
-    dynamodb_settings: DynamoDBSettings,
-    dynamodb_seeds: Seeds,
-    dynamodb_client: DynamoDBClient,
+@pytest.mark.parametrize('seeds', ['transact_get.jsonl'], indirect=True)
+def test_transact_get_with_multiple_sort_keys_and_projections(
+    boto3_dynamodb_client,
+    settings,
+    seeds,
 ):
-    dynamodb_seeds('transact_get.jsonl')
-    table_name = dynamodb_settings['TableName']
-    transact = TransactGet(table_name, client=dynamodb_client)
+    table_name = settings['table_name']
+    tx = TransactGet(table_name, client=boto3_dynamodb_client)
 
-    user = transact.get_items(
+    user = tx.get_items(
         PartitionKey(id='USER#4df0f9ac-a235-41a2-9746-7a84409a809b')
         + SortKey(sk='0')
         + SortKey(

@@ -1,7 +1,9 @@
 import json
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from typing import TYPE_CHECKING, Any, Type, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Type, TypedDict
 from urllib.parse import quote, unquote
+
+import boto3
 
 from dynamodx.keys import PrimaryKey
 
@@ -10,7 +12,7 @@ from .transact_writer import TransactWriter
 from .types import deserialize, serialize, to_dict
 
 if TYPE_CHECKING:
-    from mypy_boto3_dynamodb.client import DynamoDBClient
+    from mypy_boto3_dynamodb.client import DynamoDBClient as Boto3DynamoDBClient
     from mypy_boto3_dynamodb.literals import (
         ReturnValuesOnConditionCheckFailureType,
         ReturnValueType,
@@ -23,7 +25,7 @@ if TYPE_CHECKING:
         UpdateItemOutputTypeDef,
     )
 else:
-    DynamoDBClient = Any
+    Boto3DynamoDBClient = Any
     ReturnValuesOnConditionCheckFailureType = Any
     ReturnValueType = Any
     SelectType = Any
@@ -39,15 +41,18 @@ class QueryOutput(TypedDict):
     last_key: str | None
 
 
-class Repository:
+class DynamoDBClient:
+    """Table-scoped DynamoDB client that owns a boto3 client when not provided."""
+
     def __init__(
         self,
         table_name: str,
         *,
-        client: DynamoDBClient,
+        client: Boto3DynamoDBClient | None = None,
+        **client_kwargs: Any,
     ) -> None:
         self._table_name = table_name
-        self._client = client
+        self._client = client or boto3.client('dynamodb', **client_kwargs)
 
     def query(
         self,
@@ -187,8 +192,8 @@ class Repository:
         return_values: ReturnValueType | None = None,
         return_on_cond_fail: ReturnValuesOnConditionCheckFailureType | None = None,
     ) -> PutItemOutputTypeDef:
-        is_dynamodb_mapped = getattr(item.__class__, '_is_dynamodb_mapped', False)
-        serialized = serialize(to_dict(item) if is_dynamodb_mapped else item)  # type: ignore
+        config = _get_dynamodb_config(item.__class__)
+        serialized = serialize(to_dict(item) if config else item)  # type: ignore
         attrs = {
             'TableName': table_name or self._table_name,
             'Item': serialized,
@@ -315,22 +320,26 @@ def _startkey_b64decode(s: str) -> dict[str, AttributeValueTypeDef]:
     return json.loads(s)
 
 
-DynamoDBRepository = Repository
+class ConfigDict(TypedDict, total=False):
+    table: str
+    partition_key: str
+    sort_key: str | None
 
-T = TypeVar('T')
 
+def _get_dynamodb_config(obj: Any) -> ConfigDict | None:
+    """Extract DynamoDB config from model_config or __dynamodb_config__.
 
-def dynamodb_mapping(
-    table: str,
-    partition_key: str,
-    sort_key: str | None = None,
-) -> Any:
-    def decorator(cls: type[T]) -> type[T]:
-        cls._dynamodb_table = table  # type: ignore
-        cls._dynamodb_partition_key = partition_key  # type: ignore
-        cls._dynampdb_sort_key = sort_key  # type: ignore
-        cls._is_dynamodb_mapped = True  # type: ignore
+    Checks model_config first (Pydantic style), then falls back to __dynamodb_config__.
+    """
 
-        return cls
+    # Check model_config first (Pydantic style)
+    model_config = getattr(obj, 'model_config', None)
+    if model_config and 'table' in model_config:
+        return ConfigDict(
+            table=model_config.get('table', ''),
+            partition_key=model_config.get('partition_key'),
+            sort_key=model_config.get('sort_key'),
+        )
 
-    return decorator
+    # Fall back to __dynamodb_config__ (dataclass/plain class style)
+    return getattr(obj, '__dynamodb_config__', None)
